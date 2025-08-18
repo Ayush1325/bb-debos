@@ -1,0 +1,55 @@
+architecture: "arm64"
+
+actions:
+  - action: download
+    name: u-boot
+    url: https://github.com/beagleboard/u-boot-pocketbeagle2/releases/latest/download/u-boot.img
+
+  - action: download
+    name: tispl
+    url: https://github.com/beagleboard/u-boot-pocketbeagle2/releases/latest/download/tispl.bin
+
+  - action: download
+    name: tiboot3
+    url: https://github.com/beagleboard/u-boot-pocketbeagle2/releases/latest/download/tiboot3.bin
+
+  - action: run
+    chroot: false
+    command: sh -c "mkdir -p ${ROOTDIR}/boot/firmware"
+
+  - action: overlay
+    origin: u-boot
+    destination: /boot/firmware/u-boot.img
+
+  - action: overlay
+    origin: tispl
+    destination: /boot/firmware/tispl.bin
+
+  - action: overlay
+    origin: tiboot3
+    destination: /boot/firmware/tiboot3.bin
+
+  - action: image-partition
+    imagename: "test.img"
+    imagesize: 1GiB
+    partitiontype: msdos
+    mountpoints:
+      - partition: BOOT
+        mountpoint: /boot/firmware
+      - mountpoint: /
+        partition: root
+    partitions:
+      - name: BOOT
+        fs: fat32
+        start: 0%
+        end: 128MiB
+        flags:
+          - boot
+      - name: root
+        fs: ext4
+        start: 128MiB
+        end: 100%
+
+  - action: filesystem-deploy
+    setup-fstab: false
+    setup-kernel-cmdline: false
