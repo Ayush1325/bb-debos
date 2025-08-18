@@ -1,39 +1,72 @@
+{{- $suite := or .suite "trixie" -}}
 {{- $image := or .image "pocketbeagle2.img" -}}
 
-architecture: "arm64"
+{{- $architecture := "arm64" -}}
+
+architecture: {{ $architecture }}
 
 actions:
-  - action: download
-    name: u-boot
-    url: https://github.com/beagleboard/u-boot-pocketbeagle2/releases/latest/download/u-boot.img
+  - action: debootstrap
+    suite: {{ $suite }}
+    variant: minbase
+    components:
+      - main
+      - contrib
+      - non-free
+      - non-free-firmware
+
+  - action: apt
+    description: "Install basic dependencies"
+    update: true
+    packages:
+      - bash-completion
+      - bc
+      - build-essential
+      - ca-certificates
+      - curl
+      - device-tree-compiler
+      - git
+      - gpiod
+      - htop
+      - i2c-tools
+      - iwd
+      - nano
+      - python-is-python3
+      - sudo
+      - vim
+      - wget
+      - ssl-cert
 
   - action: download
-    name: tispl
-    url: https://github.com/beagleboard/u-boot-pocketbeagle2/releases/latest/download/tispl.bin
+    name: bb-keyring
+    url: https://debian.beagle.cc/arm64/pool/main/b/bbb.io-keyring/bbb.io-keyring_1.20250813.0-0~trixie%2B20250813_all.deb
 
-  - action: download
-    name: tiboot3
-    url: https://github.com/beagleboard/u-boot-pocketbeagle2/releases/latest/download/tiboot3.bin
+  - action: overlay
+    origin: bb-keyring
+    destination: /bb-keyring.deb
 
   - action: run
-    chroot: false
-    command: sh -c "mkdir -p ${ROOTDIR}/boot/firmware"
+    description: "Add beagle mirrors"
+    chroot: true
+    script: scripts/setup_beagleboard_debian_mirrors.sh {{ $architecture }} {{ $suite }}
 
-  - action: overlay
-    origin: u-boot
-    destination: /boot/firmware/u-boot.img
+  - action: apt
+    description: "Update beagleboard keyring"
+    update: true
+    unauthenticated: true
+    packages:
+      - bbb.io-keyring
+      - bbb.io-kernel-6.12-ti-k3-am62
+      - bb-u-boot-pocketbeagle2
 
-  - action: overlay
-    origin: tispl
-    destination: /boot/firmware/tispl.bin
-
-  - action: overlay
-    origin: tiboot3
-    destination: /boot/firmware/tiboot3.bin
+  # Personally, I feel like it would be nice to make bb-u-boot-pocketbeagle2 install stuff in firmware directly
+  - action: run
+    description: "Setup uboot"
+    script: scripts/setup_uboot.sh bb-u-boot-pocketbeagle2
 
   - action: image-partition
     imagename: {{ $image }}
-    imagesize: 1GiB
+    imagesize: 2GiB
     partitiontype: msdos
     mountpoints:
       - partition: BOOT
@@ -61,7 +94,7 @@ actions:
     postprocess: true
     command: bmaptool create {{ $image }} > {{ $image }}.bmap
 
-  - action: run
-    description: "Compressing final image"
-    postprocess: true
-    command: xz -f {{ $image }}
+  # - action: run
+  #   description: "Compressing final image"
+  #   postprocess: true
+  #   command: xz -f {{ $image }}
