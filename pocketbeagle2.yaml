@@ -1,3 +1,5 @@
+{{- $image := or .image "pocketbeagle2.img" -}}
+
 architecture: "arm64"
 
 actions:
@@ -30,7 +32,7 @@ actions:
     destination: /boot/firmware/tiboot3.bin
 
   - action: image-partition
-    imagename: "test.img"
+    imagename: {{ $image }}
     imagesize: 1GiB
     partitiontype: msdos
     mountpoints:
@@ -53,3 +55,13 @@ actions:
   - action: filesystem-deploy
     setup-fstab: false
     setup-kernel-cmdline: false
+
+  - action: run
+    description: "Create block map file"
+    postprocess: true
+    command: bmaptool create {{ $image }} > {{ $image }}.bmap
+
+  - action: run
+    description: "Compressing final image"
+    postprocess: true
+    command: xz -f {{ $image }}
