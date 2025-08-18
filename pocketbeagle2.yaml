@@ -8,7 +8,6 @@ architecture: {{ $architecture }}
 actions:
   - action: debootstrap
     suite: {{ $suite }}
-    variant: minbase
     components:
       - main
       - contrib
@@ -64,6 +63,11 @@ actions:
     description: "Setup uboot"
     script: scripts/setup_uboot.sh bb-u-boot-pocketbeagle2
 
+  # Again, would be nice if the kernel package did this itself
+  - action: run
+    description: "Setup Kernel"
+    script: scripts/setup_linux.sh
+
   - action: image-partition
     imagename: {{ $image }}
     imagesize: 2GiB
@@ -94,7 +98,7 @@ actions:
     postprocess: true
     command: bmaptool create {{ $image }} > {{ $image }}.bmap
 
-  # - action: run
-  #   description: "Compressing final image"
-  #   postprocess: true
-  #   command: xz -f {{ $image }}
+  - action: run
+    description: "Compressing final image"
+    postprocess: true
+    command: xz -f {{ $image }}
