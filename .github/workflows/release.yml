@@ -1,0 +1,40 @@
+name: Create Release artifacts
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  pocketbeagle2:
+    name: "Build PocketBeagle2 Debian Image"
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build Image
+        run: 
+          docker run 
+          --cgroupns=private
+          -v $(pwd):/recipes
+          --workdir /recipes 
+          --tmpfs /scratch:exec
+          --tmpfs /run
+          --device /dev/kvm
+          --privileged
+          -e TMP=/scratch
+          -e SYSTEMD_NSPAWN_UNIFIED_HIERARCHY=1
+          godebos/debos 
+          -c $(nproc)
+          --fakemachine-backend=kvm
+          pocketbeagle2.yaml
+
+      - name: Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          name: Continuous Release
+          tag_name: continuous-release
+          files: |
+            pocketbeagle2.img.xz
+            pocketbeagle2.img.bmap
