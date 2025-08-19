@@ -6,7 +6,7 @@
 architecture: {{ $architecture }}
 
 actions:
-  - action: debootstrap
+  - action: mmdebstrap
     suite: {{ $suite }}
     components:
       - main
