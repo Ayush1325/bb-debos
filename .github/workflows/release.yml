@@ -27,6 +27,7 @@ jobs:
           godebos/debos 
           -c $(nproc)
           --fakemachine-backend=kvm
+          -t compress:true
           pocketbeagle2.yaml
 
       - name: Pre-Release
